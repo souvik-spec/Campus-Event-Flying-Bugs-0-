@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Campus Event Participation — Frontend</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#6ee7b7; --glass: rgba(255,255,255,0.03);
+      --radius:14px; --maxw:1100px;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; background:linear-gradient(180deg,#071029 0%, #071022 60%); color:#e6eef6; -webkit-font-smoothing:antialiased}
+    .container{max-width:var(--maxw); margin:36px auto; padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .brand{display:flex;align-items:center;gap:14px}
+    .logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#60a5fa);display:flex;align-items:center;justify-content:center;font-weight:700;color:#042027}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .controls{display:flex;gap:10px;align-items:center}
+    .search{background:var(--glass);border:1px solid rgba(255,255,255,0.03);padding:10px 12px;border-radius:10px;min-width:220px}
+    select, input[type=text]{background:transparent;border:none;outline:none;color:inherit;width:100%}
+    .btn{background:linear-gradient(90deg,#22c1c3,#60a5fa);color:#042027;padding:9px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
+
+    .layout{display:grid;grid-template-columns:1fr 320px;gap:20px}
+    .events{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(2,6,23,0.6);}
+    .card .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .card h3{margin:0;font-size:16px}
+    .card p{margin:8px 0 12px;color:var(--muted);font-size:13px}
+    .card .tags{display:flex;gap:8px;flex-wrap:wrap}
+    .tag{font-size:12px;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
+    .card .foot{display:flex;justify-content:space-between;align-items:center}
+
+    aside{background:var(--card);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+    .panel h4{margin:0 0 8px 0}
+    .small{font-size:13px;color:var(--muted)}
+    .switch{display:flex;gap:8px;align-items:center;margin-top:10px}
+
+    .empty{padding:30px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);text-align:center;color:var(--muted)}
+
+    /* modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal{max-width:720px;width:100%;background:linear-gradient(180deg,#081427,#061122);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+    .modal header{display:flex;justify-content:space-between;align-items:center}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    label{font-size:13px;color:var(--muted)}
+    input, textarea, select{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+
+    footer{margin-top:26px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* responsive */
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.container{padding:12px}.controls{flex-direction:column;align-items:stretch}.search{min-width:auto}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">CE</div>
+        <div>
+          <h1>Campus Event Participation</h1>
+          <p class="lead">Find, join & manage college events — built for hackathons</p>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="search"><input id="searchInput" type="text" placeholder="Search events, clubs or tags" /></div>
+        <select id="categoryFilter" class="search">
+          <option value="all">All Categories</option>
+        </select>
+        <button class="btn" id="createEventBtn">+ Create Event</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="small">Showing <span id="count">0</span> events</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="sort" class="search" style="min-width:160px">
+              <option value="soon">Soonest</option>
+              <option value="popular">Most Popular</option>
+              <option value="alpha">A → Z</option>
+            </select>
+            <button class="btn secondary" id="myRegsBtn">My Registrations</button>
+          </div>
+        </div>
+
+        <div id="eventsGrid" class="events">
+          <!-- event cards injected here -->
+        </div>
+        <div id="emptyBox" class="empty" style="display:none">No events found. Try clearing filters or creating a new event.</div>
+      </main>
+
+      <aside>
+        <div class="panel">
+          <h4>Filters</h4>
+          <div style="margin-top:8px">
+            <label class="small">By Date</label>
+            <div style="display:flex;gap:8px;margin-top:8px"><input id="fromDate" type="date" /><input id="toDate" type="date" /></div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label class="small">By Tag</label>
+            <div id="tagWrap" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label class="small">Quick Actions</label>
+            <div class="switch"><button class="btn secondary" id="clearFilters">Clear</button><button class="btn" id="exportRegs">Export CSV</button></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>Prototype • Open-source • Built for college hackathons</footer>
+  </div>
+
+  <!-- modal -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <header>
+        <h3 id="modalTitle">Register for Event</h3>
+        <button id="closeModal" class="btn secondary">Close</button>
+      </header>
+      <div id="modalBody">
+        <!-- dynamic content -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sample data and simple frontend logic
+    const sampleEvents = [
+      {id:1,title:'Hackathon Kickoff',desc:'Opening ceremony and team formation',category:'Tech',tags:['Hackathon','Workshop'],date:'2025-12-05',spots:80,registered:12},
+      {id:2,title:'AI Workshop: Intro to ML',desc:'Hands-on ML basics using Python',category:'Workshop',tags:['AI','Python'],date:'2025-11-28',spots:40,registered:36},
+      {id:3,title:'Coding Contest — Algorithms',desc:'Timed algorithmic contest (3 rounds)',category:'Competition',tags:['Algorithms','Contest'],date:'2025-12-02',spots:120,registered:72},
+      {id:4,title:'Design Sprint',desc:'UX/UI sprint for app ideas',category:'Design',tags:['UI/UX','Workshop'],date:'2025-12-03',spots:30,registered:10},
+    ];
+
+    // Utilities
+    const $ = id => document.getElementById(id);
+
+    // Persistence keys
+    const EVENTS_KEY = 'ce_events_v1';
+    const REGS_KEY = 'ce_regs_v1';
+
+    // Initialize storage
+    function loadEvents(){
+      const raw = localStorage.getItem(EVENTS_KEY);
+      if(raw) return JSON.parse(raw);
+      localStorage.setItem(EVENTS_KEY, JSON.stringify(sampleEvents));
+      return sampleEvents;
+    }
+
+    function saveEvents(events){ localStorage.setItem(EVENTS_KEY, JSON.stringify(events)); }
+
+    function loadRegs(){ return JSON.parse(localStorage.getItem(REGS_KEY) || '[]'); }
+    function saveRegs(regs){ localStorage.setItem(REGS_KEY, JSON.stringify(regs)); }
+
+    let events = loadEvents();
+    let regs = loadRegs();
+
+    // Render helpers
+    function renderEvents(list){
+      const grid = $('eventsGrid'); grid.innerHTML='';
+      $('count').textContent = list.length;
+      if(list.length===0){ $('emptyBox').style.display='block'; return } else $('emptyBox').style.display='none';
+      list.forEach(ev => {
+        const card = document.createElement('div'); card.className='card';
+        const meta = document.createElement('div'); meta.className='meta';
+        const h = document.createElement('h3'); h.textContent = ev.title;
+        const d = document.createElement('div'); d.className='small'; d.textContent = (new Date(ev.date)).toLocaleDateString();
+        meta.appendChild(h); meta.appendChild(d);
+        const p = document.createElement('p'); p.textContent = ev.desc;
+        const tags = document.createElement('div'); tags.className='tags'; ev.tags.forEach(t=>{ const s = document.createElement('span'); s.className='tag'; s.textContent=t; tags.appendChild(s) });
+        const foot = document.createElement('div'); foot.className='foot';
+        const left = document.createElement('div'); left.textContent = `${ev.registered}/${ev.spots} joined`;
+        const right = document.createElement('div');
+        const joinBtn = document.createElement('button'); joinBtn.className='btn'; joinBtn.textContent='Register'; joinBtn.onclick = ()=> openRegister(ev.id);
+        const more = document.createElement('button'); more.className='btn secondary'; more.textContent='Details'; more.style.marginLeft='8px'; more.onclick=()=>openDetails(ev.id);
+        right.appendChild(joinBtn); right.appendChild(more);
+        foot.appendChild(left); foot.appendChild(right);
+        card.appendChild(meta); card.appendChild(p); card.appendChild(tags); card.appendChild(foot);
+        grid.appendChild(card);
+      })
+    }
+
+    // Filters
+    function getFilters(){
+      return {
+        q: $('searchInput').value.trim().toLowerCase(),
+        cat: $('categoryFilter').value,
+        from: $('fromDate').value,
+        to: $('toDate').value,
+        sort: $('sort').value
+      }
+    }
+
+    function applyFilters(){
+      const f = getFilters();
+      let list = events.filter(ev => {
+        if(f.cat!='all' && ev.category!==f.cat) return false;
+        if(f.q){ const hay = (ev.title+ev.desc+ev.tags.join(' ') + ev.category).toLowerCase(); if(!hay.includes(f.q)) return false }
+        if(f.from && new Date(ev.date) < new Date(f.from)) return false;
+        if(f.to && new Date(ev.date) > new Date(f.to)) return false;
+        return true;
+      })
+      if(f.sort==='soon') list.sort((a,b)=> new Date(a.date)-new Date(b.date));
+      if(f.sort==='alpha') list.sort((a,b)=> a.title.localeCompare(b.title));
+      if(f.sort==='popular') list.sort((a,b)=> b.registered - a.registered);
+      renderEvents(list);
+    }
+
+    // Populate filters
+    function populateCategory(){
+      const cats = Array.from(new Set(events.map(e=>e.category)));
+      const sel = $('categoryFilter'); sel.innerHTML=''; sel.appendChild(new Option('All Categories','all'));
+      cats.forEach(c=> sel.appendChild(new Option(c,c)));
+      // tags
+      const tagWrap = $('tagWrap'); tagWrap.innerHTML='';
+      const tags = Array.from(new Set(events.flatMap(e=>e.tags)));
+      tags.forEach(t=>{ const b = document.createElement('button'); b.className='tag'; b.style.cursor='pointer'; b.textContent=t; b.onclick=()=>{ $('searchInput').value=t; applyFilters() }; tagWrap.appendChild(b) })
+    }
+
+    // Modal & register
+    function openModal(html){ $('modalBody').innerHTML = html; $('modalBackdrop').style.display='flex'; }
+    function closeModal(){ $('modalBackdrop').style.display='none'; }
+    $('closeModal').onclick = closeModal; $('modalBackdrop').onclick = (e)=>{ if(e.target.id==='modalBackdrop') closeModal() };
+
+    function openRegister(id){ const ev = events.find(x=>x.id===id); if(!ev) return;
+      const registered = regs.filter(r=>r.eventId===id).length;
+      const html = `
+        <p class="small">${ev.title} — ${new Date(ev.date).toLocaleDateString()}</p>
+        <div class="form-grid">
+          <div>
+            <label>Name</label>
+            <input id="reg_name" placeholder="Your name" />
+          </div>
+          <div>
+            <label>Email</label>
+            <input id="reg_email" placeholder="you@college.edu" />
+          </div>
+          <div>
+            <label>College ID / Roll</label>
+            <input id="reg_roll" placeholder="Roll number" />
+          </div>
+          <div>
+            <label>Team (optional)</label>
+            <input id="reg_team" placeholder="Team name" />
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn" onclick="submitReg(${id})">Confirm Registration</button>
+        </div>
+      `;
+      openModal(html);
+    }
+
+    window.submitReg = function(id){
+      const name = $('reg_name').value.trim();
+      const email = $('reg_email').value.trim();
+      const roll = $('reg_roll').value.trim();
+      if(!name || !email || !roll){ alert('Please fill name, email and roll.'); return }
+      // save
+      const entry = {id: Date.now(), eventId:id, name, email, roll, team: $('reg_team').value.trim(), ts:new Date().toISOString()};
+      regs.push(entry); saveRegs(regs);
+      // increment counter in events
+      const ev = events.find(e=>e.id===id); if(ev){ ev.registered = (ev.registered||0)+1; saveEvents(events); events = loadEvents() }
+      applyFilters(); closeModal(); alert('Registered successfully — check My Registrations');
+    }
+
+    function openDetails(id){ const ev = events.find(x=>x.id===id); if(!ev) return;
+      const html = `<p class="small">${ev.category} • ${new Date(ev.date).toLocaleString()}</p>
+      <h3 style="margin-top:8px">${ev.title}</h3>
+      <p style="color:var(--muted);margin-top:6px">${ev.desc}</p>
+      <div style="margin-top:10px"><strong>Spots:</strong> ${ev.spots} • <strong>Joined:</strong> ${ev.registered}</div>
+      <div class="actions"><button class="btn" onclick="openRegister(${id})">Register</button><button class="btn secondary" onclick="closeModal()">Close</button></div>
+      `;
+      openModal(html);
+    }
+
+    // My registrations
+    $('myRegsBtn').onclick = ()=>{
+      const my = loadRegs();
+      if(my.length===0){ alert('No registrations yet') ; return }
+      const rows = my.map(r=>`<div style="padding:8px 0;border-bottom:1px dashed rgba(255,255,255,0.03)"><strong>${r.name}</strong> — ${r.roll}<div class="small">For: ${events.find(e=>e.id===r.eventId)?.title || '—'} • ${new Date(r.ts).toLocaleString()}</div></div>`).join('');
+      openModal(`<h3>My Registrations</h3><div style="max-height:360px;overflow:auto;margin-top:8px">${rows}</div><div class="actions"><button class="btn secondary" onclick="closeModal()">Close</button></div>`)
+    }
+
+    // Create event (simple admin)
+    $('createEventBtn').onclick = ()=>{
+      const html = `
+        <div>
+          <label>Title</label>
+          <input id="ev_title" />
+        </div>
+        <div class="form-grid">
+          <div>
+            <label>Category</label>
+            <input id="ev_cat" />
+          </div>
+          <div>
+            <label>Date</label>
+            <input id="ev_date" type="date" />
+          </div>
+          <div>
+            <label>Spots</label>
+            <input id="ev_spots" type="number" />
+          </div>
+          <div>
+            <label>Tags (comma)</label>
+            <input id="ev_tags" />
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <label>Description</label>
+          <textarea id="ev_desc" rows="3"></textarea>
+        </div>
+        <div class="actions"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn" onclick="submitEvent()">Create</button></div>
+      `;
+      $('modalTitle').textContent='Create Event'; openModal(html);
+    }
+
+    window.submitEvent = function(){
+      const title = $('ev_title').value.trim();
+      const cat = $('ev_cat').value.trim() || 'General';
+      const date = $('ev_date').value; const spots = parseInt($('ev_spots').value||'0');
+      const tags = $('ev_tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const desc = $('ev_desc').value.trim();
+      if(!title || !date){ alert('Please provide title and date'); return }
+      const id = Date.now();
+      events.push({id,title,category:cat,date,spots,registered:0,tags,desc}); saveEvents(events); events = loadEvents(); populateCategory(); applyFilters(); closeModal(); alert('Event created');
+    }
+
+    // Export CSV
+    $('exportRegs').onclick = ()=>{
+      const rows = ['Name,Email,Roll,Team,Event,Date,RegisteredAt'];
+      regs.forEach(r=>{ const ev = events.find(e=>e.id===r.eventId); rows.push([r.name,r.email,r.roll,r.team || '', ev?.title || '', ev?.date || '', r.ts].map(s=>`"${(s||'').replace(/"/g,'""')}"`).join(',')) });
+      const csv = rows.join('\n');
+      const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='registrations.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // Clear filters
+    $('clearFilters').onclick = ()=>{ $('searchInput').value=''; $('fromDate').value=''; $('toDate').value=''; $('categoryFilter').value='all'; applyFilters(); }
+
+    // hookup events
+    ['searchInput','categoryFilter','fromDate','toDate','sort'].forEach(id=>{ $(id).addEventListener('input', applyFilters) });
+
+    // init
+    populateCategory(); applyFilters();
+
+  </script>
+</body>
+</html>
